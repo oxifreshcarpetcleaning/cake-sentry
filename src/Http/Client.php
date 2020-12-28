@@ -2,18 +2,15 @@
 
 namespace Connehito\CakeSentry\Http;
 
-use Cake\Core\Configure;
 use Cake\Core\InstanceConfigTrait;
 use Cake\Event\Event;
 use Cake\Event\EventDispatcherTrait;
 use Cake\Utility\Hash;
 use Psr\Http\Message\ServerRequestInterface;
-use RuntimeException;
 use Sentry\Breadcrumb;
 use Sentry\SentrySdk;
 use Sentry\Severity;
 use Sentry\State\Hub;
-use function Sentry\init;
 
 class Client
 {
@@ -38,6 +35,16 @@ class Client
     {
         $this->setConfig($config);
         $this->setupClient();
+    }
+
+    /**
+     * Construct Raven_Client and inject config.
+     *
+     * @return void
+     */
+    protected function setupClient(): void
+    {
+        $this->hub = SentrySdk::getCurrentHub();
     }
 
     /**
@@ -91,25 +98,6 @@ class Client
 
         $context['lastEventId'] = $lastEventId;
         $event = new Event('CakeSentry.Client.afterCapture', $this, $context);
-        $this->getEventManager()->dispatch($event);
-    }
-
-    /**
-     * Construct Raven_Client and inject config.
-     *
-     * @return void
-     */
-    protected function setupClient(): void
-    {
-        $config = (array)Configure::read('Sentry');
-        if (!Hash::check($config, 'dsn')) {
-            throw new RuntimeException('Sentry DSN not provided.');
-        }
-
-        init($config);
-        $this->hub = SentrySdk::getCurrentHub();
-
-        $event = new Event('CakeSentry.Client.afterSetup', $this);
         $this->getEventManager()->dispatch($event);
     }
 }
